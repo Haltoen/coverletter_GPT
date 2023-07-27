@@ -1,2 +1,6 @@
 # coverletter_GPT
-an automatic coverletter generator, using the OpenAI API
+A automatic coverletter generator, using the OpenAI API
+
+
+# Create & reset env
+conda env create --force -f environment.yml
