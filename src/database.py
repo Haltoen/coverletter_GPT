@@ -7,21 +7,22 @@ class db:
         self.setup_complete=False
         self.setup_tables
         
-    def execute_query (self, inp_conn, inp_cursor, query: str, params=None)-> None:
+    def execute_query (self, inp_conn, inp_cursor, query: str, params):
         if params:
-            inp_cursor.execute(query, params)
+            out = inp_cursor.execute(query, params)
         else:
-            inp_cursor.execute(query)
+            out = inp_cursor.execute(query)
         inp_conn.commit()
-        return None
+        return out
     
-    def single_query (self, query: str, params = None) -> None:
+    def single_query (self, query: str, params):
         conn = sql3.connect("database.db") #connect/create db file
         cursor = conn.cursor() # used to execute SQL queries
-        self.execute_query(conn, cursor, query, params)
+        res = self.execute_query(conn, cursor, query, params)
         conn.commit()
         conn.close()
-        return None
+        print ("res:",res)
+        return res
     
     """
     def multi_query (self, query_lst: list) -> None: 
@@ -37,8 +38,8 @@ class db:
         query1 = """
             CREATE TABLE IF NOT EXISTS Resume(
                 content TEXT,
-                language TEXT,
-                PRIMARY KEY (content, language)
+                language TEXT PRIMARY KEY ,
+                
             )
         """
         query2 = """
@@ -62,8 +63,18 @@ class db:
     
     def skill_list(self) -> list[str]:
         query = "SELECT skill FROM Skills"
-        res = self.single_query(self, query)
-        print (res)
+        conn = sql3.connect("database.db")  # Create the connection
+        cursor = conn.cursor()  # Create the cursor
+
+        cursor.execute(query)  # Execute the query
+        skills = cursor.fetchall()  # Fetch the data from the cursor
+        skill_list = [skill[0] for skill in skills]  # Extract the skills from the fetched rows
+
+        cursor.close()  # Close the cursor
+        conn.close()  # Close the connection
+
+        print("skills:", skill_list)
+        return skill_list
 
     def delete_database(self):
         if os.path.exists("database.db"):

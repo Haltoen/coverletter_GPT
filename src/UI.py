@@ -1,14 +1,14 @@
 import tkinter as tk
 import database
 
-db = database.db
+db = database.db()
+
 class Page(tk.Frame): 
     def __init__(self, parent, text):
         super().__init__(parent)
         self.parent = parent
         self.label = tk.Label(self, text=text)
         self.label.pack()
-        self.db = db
         
     def create_submit_field(self, cmd, name):
         input_frame = tk.Frame(self, background="grey", borderwidth=10)
@@ -23,19 +23,24 @@ class Page(tk.Frame):
         self.submit_button = tk.Button(
             input_frame,
             text="Submit",
-            command = lambda : submitfield(self, cmd)
+            command = lambda: self.submitfield(cmd)
         )
         self.submit_button.pack(side=tk.RIGHT)
-
-        def submitfield(self, command):
-            user_input = self.text_field.get()
-            print(user_input)
-            lambda user_input : command(self, user_input)  # Pass the user input as the argument to the command function
-            self.text_field.delete(0, tk.END)
+        
+    def submitfield(self, command):
+        user_input = self.text_field.get()
+        command(user_input) # Pass the user input as the argument to the command function
+        self.text_field.delete(0, tk.END)
 
     
-    def create_list_field(self, lst: list) -> None:
-        list_field = tk.Frame(self, background = "white", borderwidth=3 )
+    def create_list_field(self, lst: list, name: str) -> None:
+        list_field = tk.Frame(self, background = "white", borderwidth=10)
+        list_field.pack(side="bottom")
+
+        for elm in lst:
+            label = tk.Label(list_field, text=elm, borderwidth=3)
+            label.pack(side="bottom")
+           
 
 
 ## pages
@@ -61,8 +66,9 @@ class Resume (Page):
 class Skills (Page):
     def __init__(self, parent):
         super().__init__(parent, "This is the skills Page")
-        #self.skills=db.skill_list()
-
+        skills=db.skill_list()
+        print("skills:", skills)
+        self.create_list_field(skills, "your skills")
         self.create_submit_field(db.add_skill, name="add skills")
 
 class CoverLetter (Page):
@@ -78,7 +84,6 @@ class App(tk.Tk):
         self.current_page=HomePage
         self.create_navigation_buttons()
         self.show_current_page()
-        self.db = db
 
     def create_navigation_buttons(self):
         button_frame = tk.Frame(self)
