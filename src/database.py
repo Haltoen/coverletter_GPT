@@ -5,7 +5,7 @@ import os
 class db:
     def __init__(self):
         self.setup_complete=False
-        self.setup_tables
+        self.setup_tables()
         
     def execute_query (self, inp_conn, inp_cursor, query: str, params):
         if params:
@@ -38,8 +38,7 @@ class db:
         query1 = """
             CREATE TABLE IF NOT EXISTS Resume(
                 content TEXT,
-                language TEXT PRIMARY KEY ,
-                
+                language TEXT PRIMARY KEY
             )
         """
         query2 = """
@@ -47,9 +46,15 @@ class db:
                 skill TEXT PRIMARY KEY
             )
         """
-        self.single_query(query1)
-        self.single_query(query2)
-        return None 
+        self.single_query(query1, None)
+        self.single_query(query2, None)
+        return None
+
+
+
+
+
+
 
     def add_resume(self, content: str, language: str) -> None:
         query = "INSERT INTO Resume (content, language) VALUES (?, ?)"

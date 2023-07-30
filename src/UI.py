@@ -1,7 +1,7 @@
 import tkinter as tk
+from tkinter import ttk 
 import database
 
-db = database.db()
 
 class Page(tk.Frame): 
     def __init__(self, parent, text):
@@ -31,17 +31,31 @@ class Page(tk.Frame):
         user_input = self.text_field.get()
         command(user_input) # Pass the user input as the argument to the command function
         self.text_field.delete(0, tk.END)
-
-    
+        app.change_page(type(app.current_page))
+       
     def create_list_field(self, lst: list, name: str) -> None:
-        list_field = tk.Frame(self, background = "white", borderwidth=10)
+        list_field = tk.Frame(self, background="white", borderwidth=10)
         list_field.pack(side="bottom")
 
-        for elm in lst:
-            label = tk.Label(list_field, text=elm, borderwidth=3)
-            label.pack(side="bottom")
-           
+        if len(lst) == 0:
+            header_text = f"{name} (is Empty)"
+        else:
+            header_text = name
 
+        header = tk.Label(list_field, text=header_text, background="Grey", border=2, borderwidth=3)
+        header.grid(row=0, column=0, columnspan=2, sticky="ew")  # Use grid to span multiple columns
+
+        for index, elm in enumerate(lst):
+            label = tk.Label(list_field, text=elm, borderwidth=3)
+            label.grid(row=index + 1, column=0, sticky="w")  # Use grid to place elements in separate rows
+
+        # Add separator after the list
+        separator = ttk.Separator(list_field, orient="horizontal")
+        separator.grid(row=len(lst) + 1, column=0, columnspan=2, sticky="ew", pady=5)
+
+        # Adjust column and row weights to allow header to resize properly
+        list_field.grid_columnconfigure(0, weight=1)
+        list_field.grid_rowconfigure(len(lst) + 1, weight=1)
 
 ## pages
 
@@ -84,6 +98,7 @@ class App(tk.Tk):
         self.current_page=HomePage
         self.create_navigation_buttons()
         self.show_current_page()
+        self.db=db
 
     def create_navigation_buttons(self):
         button_frame = tk.Frame(self)
@@ -106,6 +121,7 @@ class App(tk.Tk):
         self.current_page.pack(fill=tk.BOTH, expand=True)
 
 if __name__ == "__main__":
+    db = database.db()
     app = App()
     app.mainloop()
 
