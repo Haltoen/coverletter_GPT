@@ -24,16 +24,7 @@ class db:
         print ("res:",res)
         return res
     
-    """
-    def multi_query (self, query_lst: list) -> None: 
-        conn = sql3.connect("database.db") #connect/create db file
-        cursor = conn.cursor() # used to execute SQL queries
-        for query in query_lst:
-            self.execute_query(conn, cursor, query)
-        conn.commit()
-        conn.close()
-        return None
-    """    
+ 
     def setup_tables (self) -> None:
         query1 = """
             CREATE TABLE IF NOT EXISTS Resume(
@@ -51,21 +42,33 @@ class db:
         return None
 
 
-
-
-
-
-
-    def add_resume(self, content: str, language: str) -> None:
+    def add_resume(self, res: tuple) -> None:
         query = "INSERT INTO Resume (content, language) VALUES (?, ?)"
-        self.single_query(query, (content, language))
+        self.single_query(query, res)
         return None
 
-    def add_skill(self, skill: str) -> None:
+    def remove_resume(self, language: tuple):
+        return None
+
+    def add_skill(self, skill: tuple) -> None:
         query = "INSERT INTO Skills (skill) VALUES (?)"
-        self.single_query(query, (skill,))  
-        return None   
+        try:
+            self.single_query(query, (skill[0],))
+        except sql3.IntegrityError as e:
+            print(f"Error: {e}")
+            # Here, you can display an error message to the user or take other actions
+        return None 
     
+    def remove_skill(self, skill: tuple) -> None:
+        print("remove", skill)
+        query = "DELETE FROM Skills WHERE skill = ?"
+        try:
+            self.single_query(query, (skill[0],))
+        except sql3.IntegrityError as e:
+            print(f"Error: {e}")
+            # Here, you can display an error message to the user or take other actions
+        return None
+        
     def skill_list(self) -> list[str]:
         query = "SELECT skill FROM Skills"
         conn = sql3.connect("database.db")  # Create the connection
@@ -77,8 +80,6 @@ class db:
 
         cursor.close()  # Close the cursor
         conn.close()  # Close the connection
-
-        print("skills:", skill_list)
         return skill_list
 
     def delete_database(self):

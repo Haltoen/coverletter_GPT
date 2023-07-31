@@ -10,52 +10,91 @@ class Page(tk.Frame):
         self.label = tk.Label(self, text=text)
         self.label.pack()
         
-    def create_submit_field(self, cmd, name):
+    def create_submit_field(self, cmd, input_fields: list[str]):
         input_frame = tk.Frame(self, background="grey", borderwidth=10)
-        input_frame.pack()
+        input_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        self.text_fields = []  # Initialize the list to store the text_field widgets
 
-        if name:
-            label = tk.Label(input_frame, text=name)
+        for index, field in enumerate(input_fields):
+            frame = tk.Frame(input_frame)
+            frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+            label = tk.Label(frame, text=field)
             label.pack(side=tk.TOP)
 
-        self.text_field = tk.Entry(input_frame)
-        self.text_field.pack(pady=10, side=tk.LEFT)
+            text_field = tk.Text(frame, wrap="word", height=2)  # Set the initial height to 2 lines
+            text_field.pack(side=tk.TOP)
+            self.text_fields.append(text_field)  # Add the text_field widget to the list
+
+        button_frame = tk.Frame(input_frame, background="grey", borderwidth=2)
+        button_frame.pack(fill=tk.BOTH, expand=True)
+
         self.submit_button = tk.Button(
-            input_frame,
+            button_frame,
             text="Submit",
-            command = lambda: self.submitfield(cmd)
+            command=lambda: self.submitfield(cmd)
         )
-        self.submit_button.pack(side=tk.RIGHT)
-        
-    def submitfield(self, command):
-        user_input = self.text_field.get()
-        command(user_input) # Pass the user input as the argument to the command function
-        self.text_field.delete(0, tk.END)
+        self.submit_button.pack(pady=10, side=tk.TOP)
+
+        # Allow input_frame to expand vertically
+        input_frame.pack_propagate(False)
+
+        # Bind the <Key> event to adjust the height of the Text widget based on the content
+        for text_field in self.text_fields:
+            text_field.bind("<Key>", self.adjust_text_field_height)
+
+    def adjust_text_field_height(self, event):
+        for text_field in self.text_fields:
+            num_lines = int(text_field.index("end-1c").split(".")[0])  # Get the number of lines of text
+            text_field.configure(height=min(num_lines, 10))  # Update the height based on the number of lines
+
+    def submitfield(self, command, input=None):
+        print(input)
+        if input:
+            user_inputs = input
+        else:
+            user_inputs = tuple(field.get("1.0", tk.END) for field in self.text_fields)
+            for field in self.text_fields:
+                field.delete("1.0", tk.END)  # Delete all the content from the Text widget
+        command(user_inputs)  # Pass the user input as the argument to the command function
         app.change_page(type(app.current_page))
-       
-    def create_list_field(self, lst: list, name: str) -> None:
-        list_field = tk.Frame(self, background="white", borderwidth=10)
-        list_field.pack(side="bottom")
+
+            
+
+    
+    def create_list_field(self, lst: list, name: str, cmd=None) -> None:
+        list_frame = tk.Frame(self, background="white", borderwidth=10)
+        list_frame.pack(side="bottom")
 
         if len(lst) == 0:
             header_text = f"{name} (is Empty)"
         else:
             header_text = name
 
-        header = tk.Label(list_field, text=header_text, background="Grey", border=2, borderwidth=3)
+        header = tk.Label(list_frame, text=header_text, background="Grey", border=2, borderwidth=3)
         header.grid(row=0, column=0, columnspan=2, sticky="ew")  # Use grid to span multiple columns
 
         for index, elm in enumerate(lst):
-            label = tk.Label(list_field, text=elm, borderwidth=3)
+            print(elm)
+            label = tk.Label(list_frame, text=elm, borderwidth=3)
             label.grid(row=index + 1, column=0, sticky="w")  # Use grid to place elements in separate rows
+            if cmd:
+                submit_button = tk.Button(
+                    list_frame, 
+                    text="del",
+                    command= lambda elm=elm: self.submitfield(cmd, [elm])
+                )
+                submit_button.grid(row=index + 1, column=1, sticky="w")
 
         # Add separator after the list
-        separator = ttk.Separator(list_field, orient="horizontal")
+        separator = ttk.Separator(list_frame, orient="horizontal")
         separator.grid(row=len(lst) + 1, column=0, columnspan=2, sticky="ew", pady=5)
 
-        # Adjust column and row weights to allow header to resize properly
-        list_field.grid_columnconfigure(0, weight=1)
-        list_field.grid_rowconfigure(len(lst) + 1, weight=1)
+        # Adjust row weight to allow header to resize properly
+        list_frame.grid_rowconfigure(len(lst) + 1, weight=1)
+
+        # Move the list_frame to the right using pack
+        list_frame.pack(side="right", padx=10)
+
 
 ## pages
 
@@ -75,15 +114,14 @@ class Resume (Page):
     def __init__(self, parent):
         super().__init__(parent, "This is the Resume Page")
 
-        #self.create_submit_field(db.add_skill, "add Resume")
+        self.create_submit_field(db.add_resume, ["Resume Content","Language"])
 
 class Skills (Page):
     def __init__(self, parent):
         super().__init__(parent, "This is the skills Page")
         skills=db.skill_list()
-        print("skills:", skills)
-        self.create_list_field(skills, "your skills")
-        self.create_submit_field(db.add_skill, name="add skills")
+        self.create_list_field(skills, "your skills", db.remove_skill)
+        self.create_submit_field(db.add_skill, ["add skills"])
 
 class CoverLetter (Page):
     def __init__(self, parent):
