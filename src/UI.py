@@ -1,6 +1,9 @@
 import tkinter as tk
 from tkinter import ttk 
+
 import database
+import GPT_gen
+import functions
 
 
 class Page(tk.Frame): 
@@ -10,30 +13,45 @@ class Page(tk.Frame):
         self.label = tk.Label(self, text=text)
         self.label.pack()
         
-    def create_submit_field(self, cmd, input_fields: list[str]):
-        input_frame = tk.Frame(self, background="grey", borderwidth=10)
+    def create_submit_field(self, cmd, input_fields: list[str], name=None):
+        input_frame = tk.Frame(self, background="White", borderwidth=10)
         input_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         self.text_fields = []  # Initialize the list to store the text_field widgets
+        self.out_fields = []
+        if name:
+            header = tk.Label(input_frame, text=name)
+            header.pack(pady=3, side=tk.TOP)
 
-        for index, field in enumerate(input_fields):
-            frame = tk.Frame(input_frame)
-            frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-            label = tk.Label(frame, text=field)
-            label.pack(side=tk.TOP)
-
-            text_field = tk.Text(frame, wrap="word", height=2)  # Set the initial height to 2 lines
-            text_field.pack(side=tk.TOP)
-            self.text_fields.append(text_field)  # Add the text_field widget to the list
-
-        button_frame = tk.Frame(input_frame, background="grey", borderwidth=2)
-        button_frame.pack(fill=tk.BOTH, expand=True)
+        for field in input_fields:
+            frame = tk.Frame(input_frame, borderwidth=10)
+            frame.pack()
+            if type(field) is dict:
+                txt = field["txt"]
+                if "lst" in field.keys():
+                    text_field = ttk.Combobox(frame, values=field["lst"], width=37)
+                    out_field = ("combo",text_field)
+                elif "state" in field.keys():
+                    var = tk.BooleanVar()
+                    text_field = tk.Checkbutton(frame, variable=var, onvalue=1, offvalue=0)
+                    out_field = ("check",var)       
+            else:
+                txt = field
+                print(txt)
+                text_field = tk.Text(frame, wrap="word", height=1, width=30)  # Set the initial height to 1 line
+                out_field = ("text", text_field)
+                self.text_fields.append(text_field)  # Add the text_field widget to the list
+            text_field.pack(padx=10, side=tk.RIGHT, fill=tk.X, expand=True)  # Make text fields expand horizontally
+            self.out_fields.append(out_field)
+            label = tk.Label(frame, text=txt, width=20)  # Set a fixed width for the labels
+            label.pack(side=tk.LEFT, padx=5)  # Align labels to the left
 
         self.submit_button = tk.Button(
-            button_frame,
+            input_frame,
             text="Submit",
             command=lambda: self.submitfield(cmd)
         )
-        self.submit_button.pack(pady=10, side=tk.TOP)
+        self.submit_button.pack(padx=10)
+
 
         # Allow input_frame to expand vertically
         input_frame.pack_propagate(False)
@@ -52,16 +70,17 @@ class Page(tk.Frame):
         if input:
             user_inputs = input
         else:
-            user_inputs = tuple(field.get("1.0", tk.END) for field in self.text_fields)
-            for field in self.text_fields:
-                field.delete("1.0", tk.END)  # Delete all the content from the Text widget
+            user_inputs = tuple(
+                field[1].get("1.0", tk.END) if field[0] == "text" else field[1].get() if field[0]== "combo" else field[1]
+                for field in self.out_fields
+            )
+        print(user_inputs)
         command(user_inputs)  # Pass the user input as the argument to the command function
         app.change_page(type(app.current_page))
 
-            
 
-    
-    def create_list_field(self, lst: list, name: str, cmd=None) -> None:
+    def create_list_field(self, lst: list[str], name: str, cmd=None) -> None:
+        print("lst:", lst)
         list_frame = tk.Frame(self, background="white", borderwidth=10)
         list_frame.pack(side="bottom")
 
@@ -95,17 +114,13 @@ class Page(tk.Frame):
         # Move the list_frame to the right using pack
         list_frame.pack(side="right", padx=10)
 
-
 ## pages
-
 class HomePage(Page):
     def __init__(self, parent):
         super().__init__(parent, "Welcome to the Home Page")
-        self.input_field = tk.Entry(self)  # Create the input field
-        self.input_field.pack()
-        self.button_get_input = tk.Button(self, text="Get Input", command=self.get_input_text)
-        self.button_get_input.pack()
-
+        self.create_submit_field(db.add_userdata, ["Full name", "Age", "Country", "Address"], "basic user information")
+        #self.create_submit_field(gpt.setup_API_KEY, ["API key"], "Setup OpenAI API key")
+            #self.create_submit_field(gpt.setup_API_KEY, ["API key"], "Setup OpenAI API key")
     def get_input_text(self):
         user_input = self.input_field.get()
         print("User input:", user_input)
@@ -113,8 +128,10 @@ class HomePage(Page):
 class Resume (Page):
     def __init__(self, parent):
         super().__init__(parent, "This is the Resume Page")
-
-        self.create_submit_field(db.add_resume, ["Resume Content","Language"])
+        resumes = db.resume_list()
+        self.create_list_field(resumes, "your resume'", db.remove_resume)
+        self.create_submit_field(db.add_resume, [{"txt": "Resume Language", "lst": trans.language_lst()},"Resume Content"], "add resume")
+        self.create_submit_field(trans.translate_resume, [{"txt": "from", "lst": db.resume_list()},{"txt": "to", "lst": trans.language_lst()}], "Translate resume")
 
 class Skills (Page):
     def __init__(self, parent):
@@ -122,10 +139,11 @@ class Skills (Page):
         skills=db.skill_list()
         self.create_list_field(skills, "your skills", db.remove_skill)
         self.create_submit_field(db.add_skill, ["add skills"])
-
+    
 class CoverLetter (Page):
     def __init__(self, parent):
         super().__init__(parent, "This is the coverletter Page")
+        self.create_submit_field(db.add_resume, ["Employer", {"txt": "Language","lst": db.resume_list()}, "Job description", {"txt": "ask for additional info", "state": True}], "Coverletter Generator")
 
 class App(tk.Tk):
     def __init__(self):
@@ -160,9 +178,8 @@ class App(tk.Tk):
 
 if __name__ == "__main__":
     db = database.db()
+    gpt = GPT_gen.GPT_Handler()
+    trans = functions.Trans()
     app = App()
+    print("run app")
     app.mainloop()
-
-
-    
-
