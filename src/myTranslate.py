@@ -3,10 +3,11 @@ from translate import Translator
 import os
 
 import database
-Db = database.db()
+db = database.db()
 csv_h = database.CSVHandler()
 #print(Translator.LANGUAGES)
 class Trans():
+
     def __init__(self) -> None:
         self.languages = self.language_dict()
         self.lang_list = self.language_lst()
@@ -28,8 +29,9 @@ class Trans():
     def translate_resume(self, to_from: tuple) -> None:
         from_l = to_from[0]
         to_l = to_from[1]
-        resume = str(Db.get_resume(from_l))
+        resume = str(db.get_resume(from_l))
         translation = self.translate(from_l, to_l, resume)
+        db.add_resume()
         return translation
         
 

@@ -144,7 +144,7 @@ class Skills (Page):
 class CoverLetter (Page):
     def __init__(self, parent):
         super().__init__(parent, "This is the coverletter Page")
-        self.create_submit_field(db.add_resume, ["Employer", {"txt": "Language","lst": db.resume_list()}, "Job description", {"txt": "ask for additional info", "state": True}], "Coverletter Generator")
+        self.create_submit_field(db.add_resume, [{"txt": "Language","lst": db.resume_list()}, "Employer", "Job description", {"txt": "ask for additional info", "state": True}], "Coverletter Generator")
 
 class App(tk.Tk):
     def __init__(self):
