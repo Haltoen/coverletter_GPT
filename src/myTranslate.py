@@ -19,16 +19,15 @@ class Trans():
     def language_lst (self) -> list:
         return list(self.languages.keys())
 
-    def translate(self, src, dst, txt):
+    def translate(self, src, dst, txt) -> str:
         translator = Translator(to_lang=dst, from_lang=src)
         translation = translator.translate(txt)
         print(translation)
         return translation
     
-    def translate_resume(self, res: tuple) -> None:
-        print ("res", res)
-        from_l = res[0]
-        to_l = res[1]
+    def translate_resume(self, to_from: tuple) -> None:
+        from_l = to_from[0]
+        to_l = to_from[1]
         resume = str(Db.get_resume(from_l))
         translation = self.translate(from_l, to_l, resume)
         return translation
