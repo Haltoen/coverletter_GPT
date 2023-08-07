@@ -11,8 +11,10 @@ class GPT_Handler():
         openai.api_key = txt
         self.has_api_key= True
 
-    def build_task_prompt(self, task, description, context):
-        prompt = f"Task: {task}\n\nDescription: {description}\n\nContext: {str(context)}\n\n"
+    def build_task_prompt(self, task, context: dict):
+        prompt = f"Task: {task}\n\nContext:"
+        for key in context.keys():
+            prompt = prompt + key + +": " + str(context[key]) + "\n"
         return prompt
 
     def chat_complete(self, prompt, temperature=0.7, max_tokens=150):
@@ -23,5 +25,8 @@ class GPT_Handler():
             max_tokens=max_tokens
         )
         return response['choices'][0]['message']['content']
+    
+    def gen_coverletter(self, context : dict):
+        prompt = self.build_task_prompt(task="Your task is to create a coverletter given the following information", )
 
 

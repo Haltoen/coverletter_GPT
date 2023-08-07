@@ -19,7 +19,7 @@ class db:
         
         
 
-    def execute_query (self, inp_conn, inp_cursor, query: str, params):
+    def execute_query (self, inp_conn, inp_cursor, query: str, params: tuple | None):
         try:
             print("Executing query:", query)
             print("Query parameters:", params)
@@ -59,7 +59,8 @@ class db:
 
     def add_resume(self, res: tuple) -> None:
         query = "INSERT INTO Resume (content, language) VALUES (?, ?)"
-        self.single_query(query, res)
+        params= res[1], res[0]
+        self.single_query(query, params)
         return None
     
     def remove_resume(self, language: tuple):
@@ -68,13 +69,15 @@ class db:
         return None
     
     def get_resume(self, language: tuple):
-        query = "SELECT FROM Resume WHERE language = ?"
-        res = self.execute_query(query, language)
+        print("lan:", language)
+        query = f"SELECT content FROM Resume WHERE language = ?"
+        res = self.single_query(query, (language,))
+        print(res)
         return res[0]
 
     def add_skill(self, skill: tuple) -> None:
         query = "INSERT INTO Skills (skill) VALUES (?)"
-        self.single_query(query, (skill[0],))
+        self.single_query(query, skill)
         return None 
     
     def remove_skill(self, skill: tuple) -> None:

@@ -3,8 +3,7 @@ from tkinter import ttk
 
 import database
 import GPT_gen
-import functions
-
+import myTranslate
 
 class Page(tk.Frame): 
     def __init__(self, parent, text):
@@ -12,12 +11,13 @@ class Page(tk.Frame):
         self.parent = parent
         self.label = tk.Label(self, text=text)
         self.label.pack()
+        self.forms = []
+        self.text_fields = []  # Initialize the list to store the text_field widgets
         
     def create_submit_field(self, cmd, input_fields: list[str], name=None):
         input_frame = tk.Frame(self, background="White", borderwidth=10)
         input_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        self.text_fields = []  # Initialize the list to store the text_field widgets
-        self.out_fields = []
+        out_fields = []
         if name:
             header = tk.Label(input_frame, text=name)
             header.pack(pady=3, side=tk.TOP)
@@ -29,7 +29,7 @@ class Page(tk.Frame):
                 txt = field["txt"]
                 if "lst" in field.keys():
                     text_field = ttk.Combobox(frame, values=field["lst"], width=37)
-                    out_field = ("combo",text_field)
+                    out_field = ("combo", text_field)
                 elif "state" in field.keys():
                     var = tk.BooleanVar()
                     text_field = tk.Checkbutton(frame, variable=var, onvalue=1, offvalue=0)
@@ -41,14 +41,16 @@ class Page(tk.Frame):
                 out_field = ("text", text_field)
                 self.text_fields.append(text_field)  # Add the text_field widget to the list
             text_field.pack(padx=10, side=tk.RIGHT, fill=tk.X, expand=True)  # Make text fields expand horizontally
-            self.out_fields.append(out_field)
+            out_fields.append(out_field)
             label = tk.Label(frame, text=txt, width=20)  # Set a fixed width for the labels
             label.pack(side=tk.LEFT, padx=5)  # Align labels to the left
+        self.forms.append(out_fields)
 
+        length = len(self.forms)-1
         self.submit_button = tk.Button(
             input_frame,
             text="Submit",
-            command=lambda: self.submitfield(cmd)
+            command=lambda: self.submitfield(cmd, None, length)
         )
         self.submit_button.pack(padx=10)
 
@@ -65,19 +67,18 @@ class Page(tk.Frame):
             num_lines = int(text_field.index("end-1c").split(".")[0])  # Get the number of lines of text
             text_field.configure(height=min(num_lines, 10))  # Update the height based on the number of lines
 
-    def submitfield(self, command, input=None):
-        print(input)
+    def submitfield(self, command, input=None, form_index=None):
         if input:
             user_inputs = input
         else:
             user_inputs = tuple(
                 field[1].get("1.0", tk.END) if field[0] == "text" else field[1].get() if field[0]== "combo" else field[1]
-                for field in self.out_fields
+                for field in self.forms[form_index]
             )
-        print(user_inputs)
+            print(self.forms)
+            print("form index", form_index)
         command(user_inputs)  # Pass the user input as the argument to the command function
         app.change_page(type(app.current_page))
-
 
     def create_list_field(self, lst: list[str], name: str, cmd=None) -> None:
         print("lst:", lst)
@@ -94,7 +95,7 @@ class Page(tk.Frame):
 
         for index, elm in enumerate(lst):
             print(elm)
-            label = tk.Label(list_frame, text=elm, borderwidth=3)
+            label = tk.Label(list_frame, text=elm, borderwidth=3, width=10)
             label.grid(row=index + 1, column=0, sticky="w")  # Use grid to place elements in separate rows
             if cmd:
                 submit_button = tk.Button(
@@ -179,7 +180,7 @@ class App(tk.Tk):
 if __name__ == "__main__":
     db = database.db()
     gpt = GPT_gen.GPT_Handler()
-    trans = functions.Trans()
+    trans = myTranslate.Trans()
     app = App()
     print("run app")
     app.mainloop()
