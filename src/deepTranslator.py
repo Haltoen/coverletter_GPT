@@ -1,13 +1,13 @@
-
-from translate import Translator
-
+from deep_translator import GoogleTranslator
 import database
 db = database.db()
 csv_h = database.CSVHandler()
-#print(Translator.LANGUAGES)
-class Trans():
+
+
+
+class DeepTrans():
     """
-    Handles google translate calls.
+    Handles large translation calls.
     """
     def __init__(self) -> None:
         self.languages = self.language_dict()
@@ -33,7 +33,7 @@ class Trans():
         """
         return list(self.languages.keys())
 
-    def translate(self, src: str, dst: str, txt: str) -> str:
+    def translate(self, src: str = "auto", dst: str = "english", txt: str = "Hello") -> str:
         """
         Translates text using google translate API.
 
@@ -45,11 +45,13 @@ class Trans():
         Returns:
         str: Translated text.
         """
-        translator = Translator(to_lang=dst, from_lang=src)
+        print("dst:", dst)
+        translator = GoogleTranslator(source=src.lower(), target=dst.lower())
         translation = translator.translate(txt)
-        print(translation)
         return translation
-    
+
+
+        
     def translate_resume(self, src_dst: tuple) -> None:
         """
         Translates a resume and adds it to the database.
@@ -64,4 +66,3 @@ class Trans():
         db.add_resume((to_l, translation))
         return None
         
-

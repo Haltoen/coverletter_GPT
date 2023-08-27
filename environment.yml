@@ -12,3 +12,4 @@ dependencies:
   - pandas 
   - pip:
     - translate
+    - deep-translator

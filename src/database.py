@@ -78,9 +78,12 @@ class db:
         cursor = conn.cursor()  # used to execute SQL queries
         res = self.execute_query(conn, cursor, query, params)
         conn.commit()
-        result = res.fetchall()  # Fetch all the data from the cursor
-        conn.close()
-        return result
+        try:
+            result = res.fetchall()  # Fetch all the data from the cursor
+            conn.close()
+            return result
+        except:
+            return None
     
     def setup_tables (self) -> None:
         """
@@ -124,21 +127,21 @@ class db:
         self.single_query(query, language)
         return None
     
-    def get_resume(self, language: tuple):
+    def get_resume(self, language: str):
         """
         Fetches a resumes content, given it's language.
 
         Parameters:
-        language (tuple): Expects (language: str,)
+        language (str):
 
         Returns 
-        tuple: Which contains the resume content
+        str: Which contains the resume content
         """
         print("lan:", language)
         query = f"SELECT content FROM Resume WHERE language = ?"
         res = self.single_query(query, (language,))
         print(res)
-        return res
+        return res[0][0]
 
     def add_skill(self, skill: tuple) -> None:
         """
