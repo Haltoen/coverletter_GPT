@@ -12,7 +12,7 @@ class Trans():
     def __init__(self) -> None:
         self.languages = self.language_dict()
         self.lang_list = self.language_lst()
-        print(self.lang_list)
+        #print(self.lang_list)
 
     def language_dict (self) -> dict:
         """

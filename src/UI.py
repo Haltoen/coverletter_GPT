@@ -17,6 +17,83 @@ class Page(tk.Frame):
         self.label.pack()
         self.forms = []
         self.text_fields = []  # Initialize the list to store the text_field widgets
+        self.subpages = {}
+        self.current_subpage = None
+        self.back_button = None  # To store the "Back" button widget
+        self.loading_page = None
+    
+    def add_subpage(self, name, subpage):
+        self.subpages[name] = subpage
+
+    def change_subpage(self, name):
+        if name in self.subpages:
+            if self.current_subpage:
+                self.current_subpage.pack_forget()  # Hide the current subpage
+            self.current_subpage = self.subpages[name]
+            self.current_subpage.pack(fill="both", expand=True)  # Show the new subpage
+
+    def add_navigation_page(self, subpages):
+        """
+        Adds navigation buttons for subpages to the current page.
+
+        Parameters:
+        subpages (list[str]): List of subpage names to create navigation buttons for.
+        """
+        navigation_page = tk.Frame(self)  # Create the navigation page frame
+        navigation_page.pack(fill="both", expand=True)
+        #if self.back_button:
+        #    self.current_subpage.pack_forget()
+
+        for subpage_name in subpages:
+            new_button = tk.Button(
+                navigation_page,
+                text=subpage_name,
+                font=("Helvetica", 14, "bold"),
+                relief="solid",
+                width=15,
+                pady=10,
+                command=lambda name=subpage_name: self.show_navigation_page(name)
+            )
+            new_button.pack(side=tk.TOP, pady=50)
+
+        self.add_subpage("NavigationPage", navigation_page)  # Add the navigation page as a subpage
+        self.change_subpage("NavigationPage")
+        self.back_button = None
+
+    def go_back(self):
+        self.change_subpage("NavigationPage")
+        self.back_button.pack_forget()
+        self.back_button = None
+
+    def create_back_button(self):
+        if self.back_button is None:
+            self.back_button = tk.Button(
+                self.current_subpage, 
+                text="Back",
+                font=("Helvetica", 14, "bold"),
+                relief="solid",
+                width=15,
+                pady=10,
+                command=self.go_back
+            )
+            self.back_button.pack(side=tk.LEFT, padx=10)
+
+    def show_navigation_page(self, name):
+        """
+        Shows the specified subpage in the current page.
+
+        Parameters:
+        name (str): Name of the subpage to show.
+        """
+        print(name)
+
+        if name in self.subpages.keys():
+            if self.current_subpage:
+                self.current_subpage.pack_forget()  # Hide the current subpage
+            self.change_subpage(name)
+            self.create_back_button()
+
+        print("name is:", name)
 
     def create_submit_field(self, cmd, input_fields: list, name=None):
         """
@@ -64,7 +141,7 @@ class Page(tk.Frame):
             
         self.forms.append(out_fields)
         length = len(self.forms)-1
-        self.submit_button = tk.Button(
+        self.submit_button = tk.Button( 
             input_frame,
             text="Submit",
             command=lambda: self.submitfield(cmd, None, length)
@@ -98,8 +175,16 @@ class Page(tk.Frame):
             )
             print(self.forms)
             print("form index", form_index)
+
+    # Reset text and combo input fields
+        for field in self.forms[form_index]:
+            field_type, field_widget = field
+            if field_type == "text":
+                field_widget.delete("1.0", tk.END)  # Clear the text widget
+                self.adjust_text_field_height()  # Reset text field height
+
         command(user_inputs)  # Pass the user input as the argument to the command function
-        app.change_page(type(app.current_page))
+        #app.change_page(type(app.current_page))
 
     def create_list_field(self, lst: list[str], name: str, cmd=None) -> None:
         print("lst:", lst)
@@ -135,11 +220,32 @@ class Page(tk.Frame):
 
         # Move the list_frame to the right using pack
         list_frame.pack(side="right", padx=10)
+    
+    def show_loading_page(self, text="Loading..."):
+        if not self.loading_page:  # If loading page doesn't exist, create it
+            self.loading_page = LoadingPage(self.parent, text)
+
+    def hide_loading_page(self):
+        if self.loading_page:
+            self.loading_page.progressbar.stop()
+            self.loading_page.destroy()
+            self.loading_page = None
+
+class LoadingPage(tk.Toplevel):
+    def __init__(self, parent, text):
+        super().__init__(parent)
+        self.title("Loading...")
+        self.geometry("300x100")
+        self.label = ttk.Label(self, text=text)
+        self.label.pack(pady=20)
+        self.progressbar = ttk.Progressbar(self, mode="indeterminate")
+        self.progressbar.pack(pady=10)
+        self.progressbar.start()
 
 class popup(tk.Toplevel):
     def __init__(self, parent, field_names=[], title="no title", text=None):
         super().__init__(parent)
-        self.geometry("600x800")
+        self.geometry("1000x800")
         self.title("Popup Window")
         self.label = tk.Label(self, text="This is a popup window!")
         self.label.pack(pady=20)
@@ -187,36 +293,53 @@ class popup(tk.Toplevel):
 class HomePage(Page):
     def __init__(self, parent, app):
         super().__init__(parent, "Welcome to the Home Page")
-
+        """
         if not db.userdata:
             self.create_submit_field(db.add_userdata, ["Full name", "Age", "Country", "Address"], "basic user information")
         elif not gpt.has_api_key:
             self.create_submit_field(gpt.add_API_KEY, ["API key"], "Setup OpenAI API key")
         else:
             return None
+        """
+
+        subpage1 = Page(self, "Subpage 1")
+        subpage1.create_submit_field(db.add_skill, [{"txt": "add skills", "content": ""}], "bruh")
+        self.add_subpage("subpage 1",subpage1)
+
+        self.add_navigation_page(self.subpages.keys())
 
 
 class Resume (Page):
     def __init__(self, parent, app):
         super().__init__(parent, "This is the Resume Page")
-        resumes = db.resume_list()
-        self.create_list_field(
-            resumes,
+
+        reslist_p = Page(self,"Resume list")
+        reslist_p.create_list_field(
+            db.resume_list(),
             "your resume'",
               db.remove_resume
               )
-        self.create_submit_field(
+        self.add_subpage("Resume list", reslist_p)
+        
+        addres_p = Page(self, "Add resume")
+        addres_p.create_submit_field(
             db.add_resume, 
             [{"txt": "Resume Language", "lst": trans.language_lst()},
-            {"txt": "Resume Content", "content": ""}], "add resume"
+            {"txt": "Resume Content", "content": ""}], "Add resume"
             )
-        self.create_submit_field(
+        self.add_subpage("Add resume", addres_p)
+
+        transres_p = Page(self, "Translate resume")
+        transres_p.create_submit_field(
             trans.translate_resume, 
             [{"txt": "from",
             "lst": db.resume_list()},
             {"txt": "to", "lst": trans.language_lst()}],
             "Translate resume"
             )
+        self.add_subpage("Translate resume", transres_p)
+
+        self.add_navigation_page(self.subpages)
 
 class Skills (Page):
     def __init__(self, parent, app):
@@ -241,8 +364,11 @@ class App(tk.Tk):
         super().__init__()
         self.title("My App")
         self.geometry("800x600")
-        self.pages = [HomePage, Resume, Skills, CoverLetter]
-        self.current_page=HomePage
+        self.pages = {"HomePage": HomePage(self, self),
+                "Resume": Resume(self, self),
+                "Skills": Skills(self, self),
+                "CoverLetter": CoverLetter(self, self)}
+        self.current_page_name = "HomePage"
         self.create_navigation_buttons()
         self.show_current_page()
         self.db=db
@@ -251,21 +377,17 @@ class App(tk.Tk):
     def create_navigation_buttons(self):
         button_frame = tk.Frame(self)
         button_frame.pack(side=tk.BOTTOM)
-        for  page in self.pages:
-            name = page.__name__
-            print(name)
-            new_button = tk.Button(button_frame, text=name, command=lambda p=page: self.change_page(p))
+        for page_name in self.pages:
+            new_button = tk.Button(button_frame, text=page_name, command=lambda p=page_name: self.change_page(p))
             new_button.pack(side=tk.LEFT)
 
-    def change_page(self, new_page):
-        self.current_page.pack_forget()
-        self.current_page = new_page
+    def change_page(self, new_page_name):
+        self.pages[self.current_page_name].pack_forget()
+        self.current_page_name = new_page_name
         self.show_current_page()
 
     def show_current_page(self):
-        new_page_class = self.current_page
-        self.current_page = new_page_class(self, self)
-        self.current_page.pack(fill=tk.BOTH, expand=True)
+        self.pages[self.current_page_name].pack(fill=tk.BOTH, expand=True)
 
     def show_popup(self, title, field_names=None, text_field=None):
         pop = popup(self, field_names=field_names, title=title, text=text_field)
@@ -282,10 +404,11 @@ class App(tk.Tk):
                 self.db.add_skill((name,))
                 print(name)
 
+
 if __name__ == "__main__":
     db = database.db()
     gpt = GPT_gen.GPT_Handler()
-    app = App()
     trans = deepTranslator.DeepTrans()
+    app = App()
     print("run app")
     app.mainloop()
